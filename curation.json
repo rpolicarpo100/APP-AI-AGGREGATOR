@@ -1,15 +1,13 @@
 {
-  "$comment": "Curadoria explícita: só estes repositórios são agregados no dashboard. Vazio ou ausente = agregar todos os acessíveis.",
+  "$comment": "Curadoria explícita: só estes repositórios são agregados no dashboard. mode 'all' ou lista vazia = agregar todos os acessíveis.",
   "mode": "allowlist",
   "repositories": [
-    "fabrica-mvps",
     "Digitalworker_Crypto",
-    "Historia_Porutgal",
     "DigitalWorker",
     "CompanyFinder",
     "News_ai_Agreger",
     "LandPage_RP",
     "Site_Historia_Mundo",
-    "Fabrica_2.0_AI"
+    "Historia_Porutgal"
   ]
 }
