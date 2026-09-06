@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "sync": "tsx scripts/sync.ts"
+    "sync": "tsx scripts/sync.ts",
+    "setup": "bash scripts/dev-setup.sh",
+    "studio": "prisma studio"
   },
   "keywords": [],
   "author": "",

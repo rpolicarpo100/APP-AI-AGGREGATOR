@@ -39,23 +39,37 @@ means implementing `ProviderAdapter` and registering it in `getAdapters()` — n
 
 ## Setup
 
+One command bootstraps everything — Postgres, database, schema, dependencies:
+
 ```bash
-npm install
+npm run setup
+```
 
-# 1. PostgreSQL connection + GitHub token
-cp .env.example .env
-#    DATABASE_URL="postgresql://user:pass@localhost:5432/ai_aggregator"
-#    GITHUB_TOKEN="ghp_..."   scopes: repo, read:user
+It is idempotent, so re-run it any time (for example after restarting the machine).
+Then add your token to `.env`:
 
-# 2. Create the schema
-npx prisma db push
-npx prisma generate
+```
+GITHUB_TOKEN="github_pat_..."
+```
 
-# 3. Run
+Fine-grained token: set **Repository access → All repositories** and grant read-only
+`Contents`, `Metadata`, `Issues`, `Pull requests` and `Actions`.
+
+```bash
 npm run dev
 ```
 
-Then open the app and press **SYNC NOW** (or `CTRL/CMD + K` → *Refresh GitHub data*).
+Open the app and press **SYNC NOW** (or `CTRL/CMD + K` → *Refresh GitHub data*).
+
+### Scripts
+
+| Command | Purpose |
+|---|---|
+| `npm run setup` | Bootstrap Postgres, schema and dependencies |
+| `npm run dev` | Development server on port 3000 |
+| `npm run sync` | Pull fresh data from GitHub |
+| `npm run studio` | Inspect the database visually |
+| `npm run build` | Production build |
 
 ## Background sync
 
