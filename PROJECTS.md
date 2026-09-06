@@ -1,54 +1,47 @@
 # Projetos a agregar — estado de acesso
 
-Verificado em 2026-09-06 contra a API pública do GitHub (sem token).
+Verificado em 2026-09-06 **com token autenticado** (fine-grained PAT, rate limit 5000/h).
 
-| # | Repositório | Estado | Notas |
-|---|---|---|---|
-| 1 | `fabrica-mvps` | 404 | Privado ou nome diferente |
-| 2 | `Digitalworker_Crypto` | **OK** | TypeScript · push 2026-09-06 |
-| 3 | `Historia_Porutgal` | **OK** | HTML · push 2026-08-28 |
-| 4 | `DigitalWorker` | 404 | Privado ou nome diferente |
-| 5 | `CompanyFinder` | 404 | O link colado juntava dois URLs |
-| 6 | `News_ai_Agreger` | 404 | Privado ou nome diferente |
-| 7 | `LandPage_RP` | 404 | Privado ou nome diferente |
-| 8 | `Site_Historia_Mundo` | 404 | Privado ou nome diferente |
-| 9 | `Fabrica_2.0_AI` | 404 | Privado ou nome diferente |
+## Repositórios efetivamente sincronizados
 
-**404 não significa que não existam.** A API pública devolve 404 tanto para repositórios
-inexistentes como para privados — é uma proteção do GitHub para não revelar a existência
-de repos privados. Com um token com scope `repo`, os privados passam a ser visíveis.
+| Repositório | Tipo | IA | Health | Linguagem |
+|---|---|---|---|---|
+| `GOD` | TOOL / APPLICATION | 100% | 95 | Python |
+| `Digitalworker_Crypto` | TOOL / APPLICATION | 64% | 100 | TypeScript |
+| `APP-AI-AGGREGATOR` | TOOL / APPLICATION | 64% | 95 | TypeScript |
+| `Historia_Porutgal` | CONTENT / STATIC SITE | — | 85 | HTML |
 
-## Classificação validada com dados reais
+A tua distinção ferramenta/conteúdo confirmou-se nos dados reais: **3 TOOL, 1 CONTENT**.
 
-Executada com o motor de `src/lib/intelligence.ts` sobre os dois repos acessíveis:
+## Repositórios não encontrados
 
-```
-Digitalworker_Crypto   AI=true   64%   AI AGENTS · RAG · TRADING AI
-                       sinais: agent, multi-agent, rag, trading, backtest, market data
+A API `/user` reporta **4 repositórios públicos e 0 privados** nesta conta. Os 7 abaixo
+devolvem 404 mesmo com token autenticado:
 
-Historia_Porutgal      AI=false   0%   —
-                       (site HTML de história — corretamente não classificado como IA)
-```
+| Repositório | Pesquisa global no GitHub |
+|---|---|
+| `fabrica-mvps` | sem resultados |
+| `DigitalWorker` | existe noutras contas (tybalex, nidarg, Jameshelloworld) — nenhuma tua |
+| `CompanyFinder` | existe noutras contas (zep1994, tuokkom, Chase-Klingel) — nenhuma tua |
+| `News_ai_Agreger` | sem resultados |
+| `LandPage_RP` | sem resultados |
+| `Site_Historia_Mundo` | sem resultados |
+| `Fabrica_2.0_AI` | sem resultados |
 
-O classificador acerta nos dois sentidos: deteta o projeto de IA e não gera falso
-positivo no site estático.
+### Interpretação
 
-## Nota sobre a agregação
+Não é uma limitação do token. Dois tokens diferentes devolveram exatamente os mesmos 4
+repositórios, e o campo `total_private_repos` da conta é 0. Hipóteses:
 
-O dashboard **não precisa de uma lista fixa de repositórios**. O `GitHubAdapter` chama
-`/user/repos` com `affiliation=owner,collaborator,organization_member`, o que traz
-automaticamente todos os repos a que a conta tem acesso — públicos e privados.
+1. Estão noutra conta GitHub (pessoal vs profissional)
+2. Estão numa organização a que este token não tem acesso
+3. Existem apenas localmente, sem push para o GitHub
+4. Foram apagados ou renomeados
 
-Ou seja: assim que o `GITHUB_TOKEN` estiver em `.env`, estes 9 projetos (e quaisquer
-outros) aparecem sozinhos, sem serem codificados em lado nenhum. Isto respeita a regra
-"NO FAKE DATA" — a lista vem da API, não de um array no código.
+Apareceu ainda o repositório **`GOD`** (Python, 100% IA), que não constava da lista original.
 
-## Correção de link
+## Nota de arquitetura
 
-O item 5 da lista original continha dois URLs concatenados:
-
-```
-https://github.com/rpolicarpo100/CompanyFinderhttps://github.com/rpolicarpo100/News_ai_Agreger
-```
-
-Foi interpretado como dois repositórios distintos: `CompanyFinder` e `News_ai_Agreger`.
+O dashboard não tem lista fixa de repositórios: usa `/user/repos` com
+`affiliation=owner,collaborator,organization_member`. Assim que estes repos existirem e
+forem acessíveis pelo token, aparecem automaticamente — sem alterações de código.
