@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// A connected data source (github, gitlab, huggingface...).
+model Provider {
+  id           String    @id @default(cuid())
+  kind         String    @unique // "github" | "gitlab" | ...
+  accountLogin String?
+  accountName  String?
+  avatarUrl    String?
+  status       String    @default("not_connected") // not_connected|connected|error|rate_limited|auth_required
+  statusDetail String?
+  lastSyncAt   DateTime?
+  syncState    String    @default("idle") // idle|syncing|error
+  rateLimit    Int?
+  rateRemaining Int?
+  rateResetAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  repositories Repository[]
+  events       ActivityEvent[]
+}
+
+/// Normalized repository, provider-agnostic.
+model Repository {
+  id           String   @id @default(cuid())
+  providerId   String
+  externalId   String
+  name         String
+  fullName     String
+  description  String?
+  url          String
+  homepage     String?
+  isPrivate    Boolean  @default(false)
+  isFork       Boolean  @default(false)
+  isArchived   Boolean  @default(false)
+  defaultBranch String?
+  primaryLanguage String?
+  stars        Int      @default(0)
+  forks        Int      @default(0)
+  watchers     Int      @default(0)
+  openIssues   Int      @default(0)
+  openPullRequests Int  @default(0)
+  sizeKb       Int      @default(0)
+  topics       String[] @default([])
+  pushedAt     DateTime?
+  createdAtRemote DateTime?
+  updatedAtRemote DateTime?
+
+  // README / docs
+  readme       String?
+  hasDocs      Boolean  @default(false)
+
+  // CI
+  ciStatus     String?  // success|failure|pending|none
+  ciCheckedAt  DateTime?
+
+  // AI classification (derived from real signals)
+  isAiProject  Boolean  @default(false)
+  aiCategories String[] @default([])
+  aiSignals    String[] @default([])
+  aiConfidence Int      @default(0)
+
+  // Health (derived)
+  healthScore  Int?
+  healthFactors Json?
+  attention    Json?    @default("[]")
+
+  detailSyncedAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  provider     Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  languages    RepositoryLanguage[]
+  dependencies Dependency[]
+  events       ActivityEvent[]
+
+  @@unique([providerId, externalId])
+  @@index([isAiProject])
+  @@index([pushedAt])
+  @@index([primaryLanguage])
+}
+
+model RepositoryLanguage {
+  id           String @id @default(cuid())
+  repositoryId String
+  name         String
+  bytes        Int    @default(0)
+
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([repositoryId, name])
+  @@index([name])
+}
+
+model Dependency {
+  id           String @id @default(cuid())
+  repositoryId String
+  name         String
+  version      String?
+  ecosystem    String // npm|pypi|...
+  isAiRelated  Boolean @default(false)
+
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([repositoryId, ecosystem, name])
+  @@index([name])
+}
+
+/// Unified timeline entry: commit, issue, pr, release, workflow.
+model ActivityEvent {
+  id           String   @id @default(cuid())
+  providerId   String
+  repositoryId String?
+  externalId   String
+  type         String   // commit|issue|pull_request|release|workflow
+  action       String?
+  title        String
+  actor        String?
+  url          String?
+  state        String?
+  occurredAt   DateTime
+  payload      Json?
+  createdAt    DateTime @default(now())
+
+  provider     Provider    @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  repository   Repository? @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, externalId])
+  @@index([occurredAt])
+  @@index([type])
+}
+
+/// Key/value for sync bookkeeping and cached aggregates.
+model SyncState {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
