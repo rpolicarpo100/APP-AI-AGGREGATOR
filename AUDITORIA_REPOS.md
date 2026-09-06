@@ -1,109 +1,136 @@
 # Auditoria de Repositórios — rpolicarpo100
 
-Data: 2026-09-06 · Fonte: GitHub API (dados reais, nenhum valor estimado)
+Data: 2026-09-06 · Fonte: GitHub API com classic PAT (scopes `repo`, `project`)
+**33 repositórios** · 4 públicos · 29 privados · Todos os dados são reais.
 
-## Alcance
+## Nota sobre o acesso
 
-**4 repositórios acessíveis.** Quatro tokens distintos devolveram sempre a mesma lista.
-Os 7 indicados (`fabrica-mvps`, `DigitalWorker`, `CompanyFinder`, `News_ai_Agreger`,
-`LandPage_RP`, `Site_Historia_Mundo`, `Fabrica_2.0_AI`) devolvem 404 — não foi possível
-auditá-los. O stream de eventos da conta também não mostra qualquer atividade neles.
-
----
-
-## Quadro comparativo
-
-| | GOD | Digitalworker_Crypto | APP-AI-AGGREGATOR | Historia_Porutgal |
-|---|---|---|---|---|
-| Criado | 2026-09-04 | 2026-09-06 | 2026-09-06 | 2026-08-28 |
-| Último push | hoje | hoje | hoje | há 9 dias |
-| Commits | 100+ | 42 | 6 | **1** |
-| Ficheiros de código | 60 | 180 | 31 | **1** |
-| Volume de código | 750 KB | 495 KB | 141 KB | 84 KB |
-| Documentação | 7 docs | 17 docs | 3 docs | **0** |
-| Branches | 2 | 1 | 1 | 1 |
-| CI / workflows | 0 | **1** | 0 | 0 |
-| Licença | nenhuma | nenhuma | nenhuma | nenhuma |
-| Descrição | **falta** | **falta** | **falta** | **falta** |
-| Topics | **nenhum** | **nenhum** | **nenhum** | **nenhum** |
-| Tipo | TOOL | TOOL | TOOL | CONTENT |
-| IA | 100% | 64% | 64% | — |
-| Health | 95 | 100 | 95 | 85 |
+Os quatro tokens anteriores eram **fine-grained** e alcançavam apenas 4 repositórios.
+O classic PAT com scope `repo` revelou os 33. A minha conclusão anterior de que os
+projetos "não existiam" estava errada — era limitação do token, não ausência de repos.
 
 ---
 
-## Análise individual
+## Panorama
 
-### GOD — MANTER (projeto principal)
-Python, 56 módulos, 100+ commits em 2 dias. O maior volume de código (750 KB) e o
-único com suíte de testes visível (`tests/test_core.py`, 65 KB). Tem instaladores para
-Windows e Unix, roadmap e documentação de troubleshooting.
+| Métrica | Valor |
+|---|---|
+| Repositórios | 33 |
+| Tools | 28 |
+| Content sites | 5 |
+| Com falha de CI | **12** |
+| Linguagens | 14 |
+| Eventos de atividade | 284 |
 
-- Classificado como 100% IA com 4 dependências de IA reais
-- **Sem CI** apesar de ter testes — o retorno mais imediato seria ligar GitHub Actions
-- `index.html` com 114 KB é o maior ficheiro; provavelmente merece ser dividido
-
-### Digitalworker_Crypto — MANTER (mais maduro)
-Next.js/TypeScript, 180 ficheiros, 42 commits. **O único com CI configurado.** Health 100.
-Documentação muito completa (17 documentos, rácio docs/código de 0.33).
-
-- Ponto de atenção: 6 ficheiros `PHASE1..6_REPORT.md` na raiz. São relatórios de
-  processo, não documentação de produto — deviam ir para `docs/history/`
-- `.env.example` declara `NEXT_PUBLIC_APP_NAME=GOD`, o que sugere que nasceu de um
-  fork/cópia do GOD. Vale confirmar se há código duplicado entre os dois
-
-### APP-AI-AGGREGATOR — MANTER (este projeto)
-Criado hoje, 6 commits, 31 ficheiros. É o dashboard que agrega os restantes.
-
-### Historia_Porutgal — DECIDIR
-Um único ficheiro HTML de 84 KB, 1 commit, sem alterações há 9 dias.
-
-- **Não é um projeto de software** — é uma página estática
-- O nome tem uma gralha: "Porutgal" em vez de "Portugal"
-- Opções: (a) manter e corrigir o nome, (b) publicar via GitHub Pages para servir
-  algum propósito, (c) arquivar, (d) fundir com `Site_Historia_Mundo` se este existir
+Distribuição: Python 13 · TypeScript 12 · HTML 4 · JavaScript 3 · sem linguagem 2
 
 ---
 
-## Problemas transversais
+## CRÍTICO — 12 repositórios com CI a falhar
 
-Aplicam-se aos **4 repositórios**:
+Confirmado run a run: são falhas **reais**, não ausência de workflows.
 
-| Problema | Impacto | Correção |
+| Repositório | Workflow | Falha desde |
 |---|---|---|
-| Nenhum tem descrição | Ilegíveis de fora; pesquisa do GitHub não os encontra | 1 minuto cada |
-| Nenhum tem topics | Sem descoberta nem categorização | 1 minuto cada |
-| Nenhum tem licença | **Sem licença, ninguém pode legalmente reutilizar o código** | Adicionar MIT |
-| Só 1 de 4 tem CI | Sem validação automática | Actions no GOD (tem testes) |
-| Nenhum tem releases | Sem versionamento | Tags semânticas quando estabilizar |
+| `DigitalWorker` | Short render worker | 2026-09-06 |
+| `fabrica-mvps` | Rede de agentes (ciclo horário) | 2026-09-06 |
+| `SOLOD_UPDATE` | CI | recente |
+| `ai-god-girl` | CI | recente |
+| `DigitalCryptoWorker` | CI | recente |
+| `News_ai_Agreger` | CI | recente |
+| `Fabrica_2.0_AI` | CI | recente |
+| `CompanyFinder` | CI | 2026-08-26 |
+| `SoloD_game` | CI | 2026-08-28 |
+| `Bones_discordsuperAI` | CI | recente |
+| `amp-mining-platform` | CI | 2026-08-11 |
 
-### Segurança — sem problemas
+Dois são especialmente graves porque correm em **ciclo agendado** — falham repetidamente:
+`fabrica-mvps` (rede de agentes horária) e `DigitalWorker` (render worker).
 
-Auditei toda a árvore de ficheiros dos 4 repositórios à procura de `.env`, `.pem`,
-`.key`, `id_rsa`, `credentials` e `secrets.*`:
+---
 
-- Nenhum segredo real commitado
-- Os `.env.example` contêm apenas placeholders e valores de localhost
-- `GOD/DEPLOY_KEY.pub` é uma chave **pública** — inofensiva por definição
+## Famílias de projetos — candidatos a consolidação
+
+O sinal mais forte da auditoria: existem **4 famílias com nomes quase idênticos**.
+
+### Família DigitalWorker — 4 repositórios
+| Repo | Linguagem | Health | IA | Último push |
+|---|---|---|---|---|
+| `Digitalworker_Crypto` | TypeScript | **100** | 64% | hoje |
+| `DigitalCryptoWorker_beta` | TypeScript | 95 | 56% | 4d |
+| `DigitalCryptoWorker` | Python | 70 ⚠ | 70% | 8d |
+| `DigitalWorker` | Python | 70 ⚠ | 32% | hoje |
+
+Provável evolução Python → TypeScript. `Digitalworker_Crypto` é claramente o vencedor.
+
+### Família GOD / GodGirl — 3 repositórios
+| Repo | Linguagem | Health | IA |
+|---|---|---|---|
+| `GOD` | Python | 95 | **100%** |
+| `GodGirl_AI` | Python | 88 | 64% |
+| `ai-god-girl` | Python | 70 ⚠ | 56% |
+
+### Família shorts — 2 repositórios
+`ai-shorts` (Python, 83) · `local-shorts-factory` (TypeScript, 83)
+
+### Família SoloD — 2 repositórios
+`SoloD_game` (HTML, 70 ⚠) · `SOLOD_UPDATE` (Python, 70 ⚠)
+
+**11 dos 33 repositórios pertencem a apenas 4 famílias.**
+
+---
+
+## Ranking por saúde
+
+### Excelentes — manter (health ≥ 95)
+`Digitalworker_Crypto` 100 · `Plataforma_VendasProdutos_Digital` 100 ·
+`Game_Redo_improved` 100 · `DigitalCryptoWorker_beta` 95 · `GOD` 95 ·
+`XMR-Platform` 95 · `APP-AI-AGGREGATOR` 95 · `Arbitagem_APP` 95 ·
+`Emolator_Android` 95 · `LandPage_RP` 95 · `Capa_generator` 95 · `RoadMap4M` 95
+
+### Bons (83–90)
+`AI_survive` 90 (1 PR aberto) · `GodGirl_AI` 88 · `opportunity-engine` 88 ·
+`ai-shorts` 83 · `local-shorts-factory` 83
+
+### Precisam de atenção (≤ 73)
+`MobGuild_Website` 73 · `Site_Historia_Mundo` 73 · `fabrica-mvps` 70 ·
+mais os 12 com CI partido · `Bones_discordsuperAI` 58 · `amp-mining-platform` 58
+
+---
+
+## Projetos de IA
+
+Confirmados com dependências reais: `GOD` 100% · `DigitalCryptoWorker` 70% ·
+`Digitalworker_Crypto` 64% · `GodGirl_AI` 64% · `APP-AI-AGGREGATOR` 64% ·
+`ai-god-girl` 56% · `DigitalCryptoWorker_beta` 56% · `ai-shorts` 54% ·
+`opportunity-engine` 40%
 
 ---
 
 ## Recomendação
 
-| Repositório | Decisão | Justificação |
-|---|---|---|
-| **GOD** | **Manter** | Maior base de código, testes, desenvolvimento ativo |
-| **Digitalworker_Crypto** | **Manter** | Mais maduro, CI a passar, bem documentado |
-| **APP-AI-AGGREGATOR** | **Manter** | Dashboard de agregação |
-| **Historia_Porutgal** | **A decidir** | Página única; útil apenas se for publicada |
+### Eliminar / arquivar — nenhum imediatamente
+Nenhum repositório é lixo evidente. Mas **11 estão em famílias sobrepostas** e é aí
+que está o ganho real: consolidar reduz de 33 para ~26 sem perder trabalho.
 
-**Nada a eliminar.** Nenhum dos 4 é lixo ou duplicado óbvio. A única candidata a
-arquivo é a `Historia_Porutgal`, e mesmo essa só se não tiver destino.
+### Candidatos a arquivar após confirmação
+| Repo | Motivo |
+|---|---|
+| `DigitalCryptoWorker` | Versão Python, superada pela TypeScript; CI partido |
+| `ai-god-girl` | Sobrepõe-se ao `GOD` (100% IA, health 95); CI partido |
+| `amp-mining-platform` | Health 58, parado há 26 dias, CI partido |
+| `Bones_discordsuperAI` | Health 58, CI partido |
+| `Camping_Info_APP`, `GAMEWEB3` | Sem linguagem detetada — provavelmente vazios |
 
-### Prioridades
+### Ações por prioridade
 
-1. Descrição, topics e licença nos 4 — 15 minutos, o maior retorno imediato
-2. CI no GOD, que já tem testes mas não os corre
-3. Arrumar os `PHASE*_REPORT.md` do Crypto para `docs/history/`
-4. Verificar duplicação de código entre GOD e Digitalworker_Crypto
-5. Decidir o destino da Historia_Porutgal
+1. **Desligar os 2 workflows agendados que falham** (`fabrica-mvps`, `DigitalWorker`) —
+   estão a consumir minutos de Actions e a gerar ruído diário
+2. **Decidir cada família**: escolher o vencedor, arquivar os restantes
+3. **Reparar ou remover** os restantes 10 CI partidos
+4. **Verificar `Camping_Info_APP` e `GAMEWEB3`** — sem linguagem, possivelmente vazios
+5. **Licença + descrição + topics** nos que forem para manter
+
+### Segurança
+Varrimento nos 4 públicos: nenhum segredo real commitado. Os 29 privados não foram
+varridos individualmente — recomenda-se `gitleaks` antes de tornar algum público.
