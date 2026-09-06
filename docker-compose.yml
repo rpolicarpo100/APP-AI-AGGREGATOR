@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aggregator
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aggregator}
+      POSTGRES_DB: ai_aggregator
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aggregator -d ai_aggregator"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Not published by default: only the app needs to reach it.
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://aggregator:${POSTGRES_PASSWORD:-aggregator}@db:5432/ai_aggregator?schema=public
+      GITHUB_TOKEN: ${GITHUB_TOKEN:?defina GITHUB_TOKEN no .env}
+      # Opcional: protege o dashboard com Basic Auth.
+      DASHBOARD_USER: ${DASHBOARD_USER:-}
+      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:-}
+    ports:
+      - "${PORT:-3000}:3000"
+    command: sh -c "npx prisma db push --accept-data-loss && npm start"
+
+volumes:
+  pgdata:

@@ -114,6 +114,44 @@ documentation presence. Never estimated when data is missing — it renders as `
 Full keyboard navigation, semantic HTML, ARIA roles on the command palette, visible focus
 states, skip link, and `prefers-reduced-motion` respected across all animations.
 
+## Deploy
+
+### Docker (self-host, inclui Postgres)
+
+```bash
+cp .env.example .env      # preencher GITHUB_TOKEN
+docker compose up -d --build
+```
+
+Sobe Postgres 17 com volume persistente, aplica o schema e arranca a app em
+`http://localhost:3000`. Variáveis suportadas:
+
+| Variável | Efeito |
+|---|---|
+| `GITHUB_TOKEN` | obrigatória — classic PAT com scope `repo` |
+| `POSTGRES_PASSWORD` | password da base de dados (default `aggregator`) |
+| `PORT` | porta exposta (default 3000) |
+| `DASHBOARD_USER` / `DASHBOARD_PASSWORD` | ativa Basic Auth |
+
+### Node (sem Docker)
+
+```bash
+npm ci && npx prisma generate && npm run build && npm start
+```
+
+### Proteção de acesso
+
+O dashboard mostra nomes, health e atividade de repositórios **privados**. Em qualquer
+deployment acessível pela rede, define `DASHBOARD_USER` e `DASHBOARD_PASSWORD` — o
+middleware protege todas as páginas e endpoints de API. Sem estas variáveis não há
+autenticação, o que só é adequado em localhost.
+
+### Sincronização periódica
+
+```bash
+0 */6 * * * cd /caminho/app && npm run sync >> /var/log/aggregator-sync.log 2>&1
+```
+
 ## License
 
 MIT
