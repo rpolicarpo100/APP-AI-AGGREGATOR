@@ -79,6 +79,8 @@ export default async function Dashboard() {
         metrics={[
           { key: "repos", label: "Repositories", value: m.repositories, href: "/projects" },
           { key: "active", label: "Active Projects", value: m.activeProjects, href: "/projects?filter=active" },
+          { key: "tools", label: "Tools", value: m.tools, href: "/projects?filter=tools" },
+          { key: "sites", label: "Content Sites", value: m.contentSites, href: "/projects?filter=content" },
           { key: "ai", label: "AI Projects", value: m.aiProjects, href: "/ai" },
           { key: "activity", label: "Recent Activity", value: m.recentActivity, href: "/activity" },
           { key: "attn", label: "Needs Attention", value: m.needsAttention, href: "/attention", tone: m.needsAttention > 0 ? "warn" : "default" },

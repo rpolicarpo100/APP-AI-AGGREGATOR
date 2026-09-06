@@ -40,6 +40,7 @@ export interface NormalizedRepository {
   pushedAt: Date | null;
   createdAtRemote: Date | null;
   updatedAtRemote: Date | null;
+  hasPages: boolean;
 }
 
 export interface NormalizedEvent {
@@ -67,6 +68,8 @@ export interface RepositoryDetail {
   hasDocs: boolean;
   ciStatus: "success" | "failure" | "pending" | "none" | null;
   openPullRequests: number;
+  /** Top-level entry names, used to infer what the project structurally is. */
+  fileNames: string[];
 }
 
 export class ProviderError extends Error {

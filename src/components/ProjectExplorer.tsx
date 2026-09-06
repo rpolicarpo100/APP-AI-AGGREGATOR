@@ -20,14 +20,18 @@ export type ProjectRow = {
   openIssues: number;
   openPullRequests: number;
   isArchived: boolean;
+  projectType: string;
+  projectSubtype: string | null;
 };
 
 const DAY = 86_400_000;
 
-type Filter = "all" | "active" | "inactive" | "failing" | "ai" | "archived";
+type Filter = "all" | "tools" | "content" | "active" | "inactive" | "failing" | "ai" | "archived";
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
+  { id: "tools", label: "Tools" },
+  { id: "content", label: "Sites" },
   { id: "active", label: "Active" },
   { id: "ai", label: "AI" },
   { id: "failing", label: "Failing CI" },
@@ -59,6 +63,8 @@ export function ProjectExplorer({
     const needle = q.trim().toLowerCase();
     let out = rows.filter((r) => {
       const idle = r.pushedAt ? (Date.now() - new Date(r.pushedAt).getTime()) / DAY : Infinity;
+      if (filter === "tools" && !["TOOL", "LIBRARY"].includes(r.projectType)) return false;
+      if (filter === "content" && r.projectType !== "CONTENT") return false;
       if (filter === "active" && (r.isArchived || idle > 30)) return false;
       if (filter === "inactive" && idle < 180) return false;
       if (filter === "failing" && r.ciStatus !== "failure") return false;
@@ -66,7 +72,7 @@ export function ProjectExplorer({
       if (filter === "archived" && !r.isArchived) return false;
       if (language && r.primaryLanguage !== language) return false;
       if (needle) {
-        const hay = `${r.name} ${r.fullName} ${r.description ?? ""} ${r.primaryLanguage ?? ""} ${r.aiCategories.join(" ")}`.toLowerCase();
+        const hay = `${r.name} ${r.fullName} ${r.description ?? ""} ${r.primaryLanguage ?? ""} ${r.aiCategories.join(" ")} ${r.projectType} ${r.projectSubtype ?? ""}`.toLowerCase();
         if (!hay.includes(needle)) return false;
       }
       return true;
@@ -146,7 +152,14 @@ export function ProjectExplorer({
                     <h3 className="card-name">{r.name}</h3>
                     <span className="card-owner mono">{r.fullName.split("/")[0]}</span>
                   </div>
-                  {r.isAiProject && <span className="ai-tag mono">AI</span>}
+                  <span className="tagstack">
+                    {r.isAiProject && <span className="ai-tag mono">AI</span>}
+                    {r.projectType !== "UNKNOWN" && (
+                      <span className={`type-tag mono ty-${r.projectType.toLowerCase()}`}>
+                        {r.projectSubtype ?? r.projectType}
+                      </span>
+                    )}
+                  </span>
                 </div>
 
                 <p className="card-desc">{r.description ?? "No description provided."}</p>

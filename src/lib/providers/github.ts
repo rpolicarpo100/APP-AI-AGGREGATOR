@@ -102,7 +102,7 @@ export class GitHubAdapter implements ProviderAdapter {
   }
 
   async getRepositoryDetail(fullName: string, defaultBranch: string | null): Promise<RepositoryDetail> {
-    const [langs, runs, prs, readme, pkg, reqs, pyproject, docs] = await Promise.all([
+    const [langs, runs, prs, readme, pkg, reqs, pyproject, docs, root] = await Promise.all([
       this.request<Record<string, number>>(`/repos/${fullName}/languages`).catch(() => null),
       this.request<any>(`/repos/${fullName}/actions/runs?per_page=1`).catch(() => null),
       this.request<any[]>(`/repos/${fullName}/pulls?state=open&per_page=100`).catch(() => null),
@@ -111,7 +111,9 @@ export class GitHubAdapter implements ProviderAdapter {
       this.raw(`/repos/${fullName}/contents/requirements.txt`).catch(() => null),
       this.raw(`/repos/${fullName}/contents/pyproject.toml`).catch(() => null),
       this.request<any>(`/repos/${fullName}/contents/docs`).catch(() => null),
+      this.request<any[]>(`/repos/${fullName}/contents`).catch(() => null),
     ]);
+    const fileNames = Array.isArray(root) ? root.map((f: any) => String(f.name)) : [];
 
     const dependencies: NormalizedDependency[] = [
       ...parsePackageJson(pkg),
@@ -135,6 +137,7 @@ export class GitHubAdapter implements ProviderAdapter {
       hasDocs: Array.isArray(docs) && docs.length > 0,
       ciStatus,
       openPullRequests: prs?.length ?? 0,
+      fileNames,
     };
   }
 
@@ -176,6 +179,7 @@ function mapRepo(r: any): NormalizedRepository {
     pushedAt: r.pushed_at ? new Date(r.pushed_at) : null,
     createdAtRemote: r.created_at ? new Date(r.created_at) : null,
     updatedAtRemote: r.updated_at ? new Date(r.updated_at) : null,
+    hasPages: !!r.has_pages,
   };
 }
 

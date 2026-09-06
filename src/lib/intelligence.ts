@@ -104,6 +104,136 @@ export function classifyAi(
   };
 }
 
+/**
+ * Project type — orthogonal to AI classification.
+ * A repo is a TOOL (does work for you) or CONTENT (presents information),
+ * decided from real structure: file tree, dependencies, language, size.
+ */
+export type ProjectType = "TOOL" | "CONTENT" | "LIBRARY" | "UNKNOWN";
+
+export interface TypeClassification {
+  type: ProjectType;
+  subtype: string | null;
+  signals: string[];
+  confidence: number;
+}
+
+const CONTENT_KEYWORDS = [
+  "landing page", "landingpage", "portfolio", "blog", "website", "site institucional",
+  "história", "historia", "history", "documentation site", "curso", "artigo",
+];
+
+const TOOL_KEYWORDS = [
+  "dashboard", "api", "agent", "bot", "automation", "scraper", "cli",
+  "platform", "generator", "tracker", "monitor", "finder", "aggregator",
+  "trading", "backend", "worker", "pipeline", "saas",
+];
+
+const APP_FRAMEWORKS = [
+  "next", "nuxt", "remix", "express", "fastify", "nestjs", "@nestjs/core",
+  "fastapi", "flask", "django", "streamlit", "gradio", "electron",
+];
+
+const CONTENT_FRAMEWORKS = ["astro", "hugo", "jekyll", "eleventy", "@11ty/eleventy", "gatsby", "docusaurus", "mkdocs"];
+
+export function classifyProjectType(input: {
+  name: string;
+  description: string | null;
+  topics: string[];
+  primaryLanguage: string | null;
+  dependencies: { name: string }[];
+  fileNames: string[];
+  sizeKb: number;
+  hasPages: boolean;
+  languages?: { name: string; bytes: number }[];
+}): TypeClassification {
+  const deps = new Set(input.dependencies.map((d) => d.name.toLowerCase()));
+  const files = input.fileNames.map((f) => f.toLowerCase());
+  const text = `${input.name} ${input.description ?? ""} ${input.topics.join(" ")}`.toLowerCase();
+
+  const signals: string[] = [];
+  let tool = 0;
+  let content = 0;
+
+  // --- structural signals (strongest: they describe what the repo IS) ---
+  const htmlFiles = files.filter((f) => f.endsWith(".html"));
+  const hasBuildManifest = files.some((f) =>
+    ["package.json", "requirements.txt", "pyproject.toml", "go.mod", "cargo.toml", "pom.xml"].includes(f),
+  );
+  const hasSourceDir = files.some((f) => ["src", "app", "lib", "server", "api", "backend"].includes(f));
+  const hasCi = files.includes(".github");
+  const hasDockerfile = files.some((f) => f === "dockerfile" || f === "docker-compose.yml");
+
+  // A handful of HTML files and no build system = a static content site.
+  if (htmlFiles.length > 0 && !hasBuildManifest) {
+    content += 55;
+    signals.push(`structure:static-html(${htmlFiles.length})`);
+  }
+  if (!hasBuildManifest && input.sizeKb < 200 && files.length <= 6) {
+    content += 20;
+    signals.push("structure:tiny-repo");
+  }
+  if (hasBuildManifest) { tool += 20; signals.push("structure:build-manifest"); }
+  if (hasSourceDir) { tool += 15; signals.push("structure:source-tree"); }
+  if (hasCi) { tool += 10; signals.push("structure:ci"); }
+  if (hasDockerfile) { tool += 15; signals.push("structure:containerized"); }
+
+  // --- dependency signals ---
+  for (const f of APP_FRAMEWORKS) if (deps.has(f)) { tool += 25; signals.push(`framework:${f}`); }
+  for (const f of CONTENT_FRAMEWORKS) if (deps.has(f)) { content += 35; signals.push(`framework:${f}`); }
+
+  const hasDb = ["prisma", "@prisma/client", "mongoose", "sqlalchemy", "pg", "psycopg2", "drizzle-orm"]
+    .some((d) => deps.has(d));
+  if (hasDb) { tool += 20; signals.push("capability:database"); }
+
+  // --- language signals ---
+  const lang = (input.primaryLanguage ?? "").toLowerCase();
+  if (lang === "html" || lang === "css") { content += 25; signals.push(`language:${lang}`); }
+  if (["typescript", "python", "go", "rust", "java", "javascript"].includes(lang)) {
+    tool += 10;
+    signals.push(`language:${lang}`);
+  }
+
+  // --- naming / description signals (weakest) ---
+  for (const k of CONTENT_KEYWORDS) if (text.includes(k)) { content += 12; signals.push(`keyword:${k}`); }
+  for (const k of TOOL_KEYWORDS) if (text.includes(k)) { tool += 12; signals.push(`keyword:${k}`); }
+  if (input.hasPages) { content += 15; signals.push("github:pages"); }
+
+  // --- library detection ---
+  const isLibrary =
+    files.includes("package.json") &&
+    !hasSourceDir &&
+    ["index.js", "index.ts", "mod.rs", "setup.py"].some((f) => files.includes(f));
+  if (isLibrary) signals.push("structure:library-entry");
+
+  let type: ProjectType;
+  let subtype: string | null = null;
+
+  if (tool === 0 && content === 0) {
+    type = "UNKNOWN";
+  } else if (isLibrary && tool >= content) {
+    type = "LIBRARY";
+  } else if (content > tool) {
+    type = "CONTENT";
+    subtype = htmlFiles.length > 0 && !hasBuildManifest ? "STATIC SITE"
+      : text.includes("landing") ? "LANDING PAGE"
+      : text.includes("portfolio") ? "PORTFOLIO"
+      : "WEBSITE";
+  } else {
+    type = "TOOL";
+    subtype = hasDb ? "APPLICATION"
+      : text.includes("agent") || text.includes("bot") ? "AGENT"
+      : text.includes("api") || text.includes("backend") ? "SERVICE"
+      : text.includes("dashboard") ? "DASHBOARD"
+      : "APPLICATION";
+  }
+
+  const total = tool + content;
+  const confidence = total === 0 ? 0 : Math.min(100, Math.round((Math.abs(tool - content) / total) * 100));
+
+  return { type, subtype, signals: [...new Set(signals)].slice(0, 20), confidence };
+}
+
 export interface HealthResult {
   score: number;
   factors: { label: string; ok: boolean; detail: string }[];

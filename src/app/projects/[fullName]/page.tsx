@@ -52,6 +52,14 @@ export default async function ProjectDetail({ params }: { params: Promise<{ full
         </div>
 
         <div className="hero-info">
+          <div className="typerow">
+            {repo.projectType !== "UNKNOWN" && (
+              <span className={`type-tag mono ty-${repo.projectType.toLowerCase()}`}>
+                {repo.projectSubtype ? `${repo.projectType} · ${repo.projectSubtype}` : repo.projectType}
+              </span>
+            )}
+            {repo.isAiProject && <span className="ai-tag mono">AI PROJECT</span>}
+          </div>
           <p className="hero-desc">{repo.description ?? "No description provided."}</p>
           <ul className="factors">
             {factors.map((f) => (

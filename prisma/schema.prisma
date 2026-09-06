@@ -50,6 +50,7 @@ model Repository {
   openPullRequests Int  @default(0)
   sizeKb       Int      @default(0)
   topics       String[] @default([])
+  hasPages     Boolean  @default(false)
   pushedAt     DateTime?
   createdAtRemote DateTime?
   updatedAtRemote DateTime?
@@ -63,6 +64,11 @@ model Repository {
   ciCheckedAt  DateTime?
 
   // AI classification (derived from real signals)
+  projectType  String   @default("UNKNOWN") // TOOL|CONTENT|LIBRARY|UNKNOWN
+  projectSubtype String?
+  typeSignals  String[] @default([])
+  typeConfidence Int    @default(0)
+
   isAiProject  Boolean  @default(false)
   aiCategories String[] @default([])
   aiSignals    String[] @default([])
@@ -84,6 +90,7 @@ model Repository {
 
   @@unique([providerId, externalId])
   @@index([isAiProject])
+  @@index([projectType])
   @@index([pushedAt])
   @@index([primaryLanguage])
 }

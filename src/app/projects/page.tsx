@@ -33,14 +33,14 @@ export default async function ProjectsPage({
       id: true, name: true, fullName: true, description: true, url: true,
       primaryLanguage: true, healthScore: true, ciStatus: true, pushedAt: true,
       isAiProject: true, aiCategories: true, stars: true, openIssues: true,
-      openPullRequests: true, isArchived: true,
+      openPullRequests: true, isArchived: true, projectType: true, projectSubtype: true,
     },
   });
 
   const rows: ProjectRow[] = repos.map((r) => ({ ...r, pushedAt: r.pushedAt?.toISOString() ?? null }));
   const languages = [...new Set(repos.map((r) => r.primaryLanguage).filter(Boolean) as string[])].sort();
 
-  const allowed = ["all", "active", "inactive", "failing", "ai", "archived"] as const;
+  const allowed = ["all", "tools", "content", "active", "inactive", "failing", "ai", "archived"] as const;
   const filter = (allowed as readonly string[]).includes(sp.filter ?? "") ? (sp.filter as any) : "all";
 
   return (

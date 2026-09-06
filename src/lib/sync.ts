@@ -1,7 +1,7 @@
 import { prisma } from "./db";
 import { GitHubAdapter } from "./providers/github";
 import { ProviderError, type ProviderAdapter } from "./providers/types";
-import { classifyAi, computeAttention, computeHealth } from "./intelligence";
+import { classifyAi, classifyProjectType, computeAttention, computeHealth } from "./intelligence";
 
 export function getAdapters(): ProviderAdapter[] {
   return [new GitHubAdapter()];
@@ -79,6 +79,7 @@ export async function syncProvider(adapter: ProviderAdapter, opts: { detailLimit
           pushedAt: r.pushedAt,
           createdAtRemote: r.createdAtRemote,
           updatedAtRemote: r.updatedAtRemote,
+          hasPages: r.hasPages,
         },
         update: {
           name: r.name,
@@ -99,6 +100,7 @@ export async function syncProvider(adapter: ProviderAdapter, opts: { detailLimit
           topics: r.topics,
           pushedAt: r.pushedAt,
           updatedAtRemote: r.updatedAtRemote,
+          hasPages: r.hasPages,
         },
       });
       seen.push(saved.id);
@@ -144,9 +146,21 @@ export async function syncProvider(adapter: ProviderAdapter, opts: { detailLimit
           pushedAt: repo.pushedAt,
           createdAtRemote: repo.createdAtRemote,
           updatedAtRemote: repo.updatedAtRemote,
+          hasPages: false,
         };
 
         const ai = classifyAi(normalized, detail);
+        const ptype = classifyProjectType({
+          name: repo.name,
+          description: repo.description,
+          topics: repo.topics,
+          primaryLanguage: repo.primaryLanguage,
+          dependencies: detail.dependencies,
+          fileNames: detail.fileNames,
+          sizeKb: repo.sizeKb,
+          hasPages: repo.hasPages,
+          languages: detail.languages,
+        });
         const healthInput = {
           pushedAt: repo.pushedAt,
           isArchived: repo.isArchived,
@@ -184,6 +198,10 @@ export async function syncProvider(adapter: ProviderAdapter, opts: { detailLimit
               ciStatus: detail.ciStatus,
               ciCheckedAt: new Date(),
               openPullRequests: detail.openPullRequests,
+              projectType: ptype.type,
+              projectSubtype: ptype.subtype,
+              typeSignals: ptype.signals,
+              typeConfidence: ptype.confidence,
               isAiProject: ai.isAiProject,
               aiCategories: ai.categories,
               aiSignals: ai.signals,

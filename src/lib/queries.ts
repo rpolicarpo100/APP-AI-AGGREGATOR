@@ -19,6 +19,8 @@ export interface SystemOverview {
     recentActivity: number;
     needsAttention: number;
     languages: number;
+    tools: number;
+    contentSites: number;
   };
   hasAnyData: boolean;
 }
@@ -30,7 +32,7 @@ export async function getOverview(): Promise<SystemOverview> {
   const activeSince = new Date(Date.now() - 30 * DAY);
   const activitySince = new Date(Date.now() - 30 * DAY);
 
-  const [providers, repositories, activeProjects, aiProjects, recentActivity, languages, attentionRows] =
+  const [providers, repositories, activeProjects, aiProjects, recentActivity, languages, attentionRows, tools, contentSites] =
     await Promise.all([
       prisma.provider.findMany({
         select: {
@@ -45,6 +47,8 @@ export async function getOverview(): Promise<SystemOverview> {
       prisma.activityEvent.count({ where: { occurredAt: { gte: activitySince } } }),
       prisma.repositoryLanguage.findMany({ distinct: ["name"], select: { name: true } }),
       prisma.repository.findMany({ where: { NOT: { attention: { equals: [] } } }, select: { id: true } }),
+      prisma.repository.count({ where: { projectType: { in: ["TOOL", "LIBRARY"] } } }),
+      prisma.repository.count({ where: { projectType: "CONTENT" } }),
     ]);
 
   return {
@@ -58,6 +62,8 @@ export async function getOverview(): Promise<SystemOverview> {
       recentActivity,
       needsAttention: attentionRows.length,
       languages: languages.length,
+      tools,
+      contentSites,
     },
     hasAnyData: repositories > 0,
   };
@@ -98,7 +104,7 @@ export async function getTopRepositories(limit = 8) {
       id: true, name: true, fullName: true, description: true, url: true,
       primaryLanguage: true, healthScore: true, ciStatus: true, pushedAt: true,
       isAiProject: true, aiCategories: true, stars: true, openIssues: true,
-      openPullRequests: true, isArchived: true,
+      openPullRequests: true, isArchived: true, projectType: true, projectSubtype: true,
     },
   });
 }
@@ -136,11 +142,21 @@ export async function getSearchIndex() {
         id: true, name: true, fullName: true, description: true, url: true,
         primaryLanguage: true, isAiProject: true, aiCategories: true, topics: true,
         healthScore: true, ciStatus: true, isArchived: true, pushedAt: true,
-        openIssues: true, openPullRequests: true,
+        openIssues: true, openPullRequests: true, projectType: true, projectSubtype: true,
       },
       orderBy: { pushedAt: "desc" },
     }),
     prisma.repositoryLanguage.groupBy({ by: ["name"], _count: { name: true } }),
   ]);
   return { repos, languages: langs.map((l) => ({ name: l.name, count: l._count.name })) };
+}
+
+/** Distribution of project types across the aggregated portfolio. */
+export async function getTypeBreakdown() {
+  const rows = await prisma.repository.groupBy({
+    by: ["projectType"],
+    _count: { projectType: true },
+    orderBy: { _count: { projectType: "desc" } },
+  });
+  return rows.map((r) => ({ type: r.projectType, count: r._count.projectType }));
 }
