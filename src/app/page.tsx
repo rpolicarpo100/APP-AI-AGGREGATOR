@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getAiBreakdown, getAttentionItems, getLanguageBreakdown, getOverview, getRecentActivity, getTopRepositories } from "@/lib/queries";
+import { getAiBreakdown, getAttentionItems, getLanguageBreakdown, getMissingCurated, getOverview, getRecentActivity, getTopRepositories } from "@/lib/queries";
 import { ensureProviders } from "@/lib/sync";
 import { MetricGrid } from "@/components/MetricGrid";
 import { EmptyState, PageHead, SyncButton } from "@/components/shell";
@@ -34,12 +34,13 @@ export default async function Dashboard() {
     );
   }
 
-  const [attention, activity, repos, ai, languages] = await Promise.all([
+  const [attention, activity, repos, ai, languages, missing] = await Promise.all([
     getAttentionItems(6),
     getRecentActivity({ limit: 8 }),
     getTopRepositories(6),
     getAiBreakdown(),
     getLanguageBreakdown(6),
+    getMissingCurated(),
   ]);
 
   const m = overview.metrics;
@@ -64,6 +65,14 @@ export default async function Dashboard() {
         <div className="banner mono" role="alert">
           GITHUB {String(github?.status).toUpperCase().replace("_", " ")} — {github?.statusDetail ?? "UNKNOWN"}
           <Link href="/sources" className="banner-link">RESOLVE</Link>
+        </div>
+      )}
+
+      {missing.length > 0 && (
+        <div className="banner warn" role="status">
+          {missing.length} CURATED {missing.length === 1 ? "REPOSITORY" : "REPOSITORIES"} NOT REACHABLE —{" "}
+          {missing.join(", ").toUpperCase()}
+          <Link href="/sources" className="banner-link">DETAILS</Link>
         </div>
       )}
 

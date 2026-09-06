@@ -160,3 +160,13 @@ export async function getTypeBreakdown() {
   });
   return rows.map((r) => ({ type: r.projectType, count: r._count.projectType }));
 }
+
+/** Curated repositories the provider could not return, from the last sync. */
+export async function getMissingCurated(): Promise<string[]> {
+  const row = await prisma.syncState.findUnique({ where: { key: "last_sync" } });
+  const v = row?.value as any;
+  const reports = v?.reports ?? [];
+  const out = new Set<string>();
+  for (const r of reports) for (const m of r?.missing ?? []) out.add(m);
+  return [...out];
+}

@@ -2,6 +2,9 @@ import { getOverview } from "@/lib/queries";
 import { ensureProviders } from "@/lib/sync";
 import { PageHead, SyncButton } from "@/components/shell";
 import { timeAgo } from "@/lib/format";
+import { getCuration } from "@/lib/curation";
+import { getMissingCurated } from "@/lib/queries";
+import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +19,10 @@ export default async function SourcesPage() {
   await ensureProviders();
   const overview = await getOverview();
   const github = overview.providers.find((p) => p.kind === "github");
+  const curation = getCuration();
+  const missing = await getMissingCurated();
+  const synced = await prisma.repository.findMany({ select: { name: true }, orderBy: { name: "asc" } });
+  const syncedNames = new Set(synced.map((r) => r.name.toLowerCase()));
   const connected = github?.status === "connected";
 
   return (
@@ -77,6 +84,37 @@ export default async function SourcesPage() {
           </div>
         )}
       </section>
+
+      {curation.mode === "allowlist" && (
+        <>
+          <h2 className="label planned-head">
+            Curated Repositories · {curation.repositories.length}
+          </h2>
+          <p className="curation-note">
+            Only these repositories are aggregated. Edit <span className="mono">curation.json</span>{" "}
+            at the project root to change the list, then run a sync.
+          </p>
+          <ul className="curated">
+            {curation.repositories.map((name) => {
+              const ok = syncedNames.has(name.toLowerCase());
+              return (
+                <li key={name}>
+                  <span className="mono c-name">{name}</span>
+                  <span className={`badge mono ${ok ? "on" : "off"}`}>
+                    {ok ? "SYNCED" : "NOT REACHABLE"}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          {missing.length > 0 && (
+            <p className="curation-note">
+              Not reachable means the provider returned no such repository — deleted, renamed,
+              or outside this token's access. Nothing is fabricated to fill the gap.
+            </p>
+          )}
+        </>
+      )}
 
       <h2 className="label planned-head">Planned Providers</h2>
       <ul className="planned">

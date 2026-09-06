@@ -2,6 +2,7 @@ import { prisma } from "./db";
 import { GitHubAdapter } from "./providers/github";
 import { ProviderError, type ProviderAdapter } from "./providers/types";
 import { classifyAi, classifyProjectType, computeAttention, computeHealth } from "./intelligence";
+import { getCuration, isCurated, missingFrom } from "./curation";
 
 export function getAdapters(): ProviderAdapter[] {
   return [new GitHubAdapter()];
@@ -30,6 +31,10 @@ export interface SyncReport {
   repositories: number;
   events: number;
   detailsSynced: number;
+  /** Curated names the provider did not return (deleted / renamed / no access). */
+  missing?: string[];
+  /** Reachable repositories excluded by curation. */
+  skipped?: number;
   error?: string;
 }
 
@@ -51,7 +56,13 @@ export async function syncProvider(adapter: ProviderAdapter, opts: { detailLimit
 
   try {
     const account = await adapter.getAccount();
-    const repos = await adapter.listRepositories();
+    const allRepos = await adapter.listRepositories();
+
+    // Apply curation: the user decides which repositories form their ecosystem.
+    const curation = getCuration();
+    const repos = allRepos.filter((r) => isCurated(r.name, curation));
+    const missing = missingFrom(allRepos.map((r) => r.name), curation);
+    const skipped = allRepos.length - repos.length;
 
     const seen: string[] = [];
     for (const r of repos) {
@@ -230,6 +241,9 @@ export async function syncProvider(adapter: ProviderAdapter, opts: { detailLimit
           .map((r) => [r.fullName, r.id] as const),
       );
       for (const ev of events) {
+        const repoName = ev.repoFullName?.split("/").pop() ?? "";
+        // Timeline must reflect the curated ecosystem, not every reachable repo.
+        if (curation.mode === "allowlist" && !isCurated(repoName, curation)) continue;
         await prisma.activityEvent.upsert({
           where: { providerId_externalId: { providerId: row.id, externalId: ev.externalId } },
           create: {
@@ -275,6 +289,8 @@ export async function syncProvider(adapter: ProviderAdapter, opts: { detailLimit
       repositories: repos.length,
       events: eventCount,
       detailsSynced,
+      missing,
+      skipped,
     };
   } catch (e) {
     const err = e as Error;
