@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { HealthRing, timeAgo } from "./primitives";
+import { HealthRing } from "./primitives";
+import { timeAgo } from "@/lib/format";
 
 export type ProjectRow = {
   id: string;

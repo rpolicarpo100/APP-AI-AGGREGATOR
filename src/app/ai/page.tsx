@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getAiBreakdown, getOverview } from "@/lib/queries";
 import { EmptyState, PageHead } from "@/components/shell";
-import { HealthRing, timeAgo } from "@/components/primitives";
+import { HealthRing } from "@/components/primitives";
+import { timeAgo } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 

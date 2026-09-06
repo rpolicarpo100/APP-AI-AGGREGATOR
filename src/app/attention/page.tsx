@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getAttentionItems, getOverview } from "@/lib/queries";
 import { EmptyState, PageHead, SyncButton } from "@/components/shell";
-import { HealthRing, timeAgo } from "@/components/primitives";
+import { HealthRing } from "@/components/primitives";
+import { timeAgo } from "@/lib/format";
 import type { AttentionFlag } from "@/lib/intelligence";
 
 export const dynamic = "force-dynamic";

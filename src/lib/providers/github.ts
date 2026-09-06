@@ -192,6 +192,23 @@ function mapEvent(e: any): NormalizedEvent[] | null {
   switch (e.type) {
     case "PushEvent": {
       const commits = e.payload?.commits ?? [];
+      // Fine-grained tokens often omit the commit array; fall back to a summary
+      // event so real pushes are never silently dropped.
+      if (commits.length === 0) {
+        const n = e.payload?.size ?? e.payload?.distinct_size ?? 0;
+        const branch = (e.payload?.ref ?? "").replace("refs/heads/", "");
+        return [{
+          ...base,
+          externalId: e.id,
+          type: "commit" as const,
+          action: "pushed",
+          title: n > 0
+            ? `${n} commit${n === 1 ? "" : "s"} pushed${branch ? ` to ${branch}` : ""}`
+            : `push${branch ? ` to ${branch}` : ""}`,
+          url: repo ? `https://github.com/${repo}/commits` : null,
+          state: null,
+        }];
+      }
       return commits.map((c: any, i: number) => ({
         ...base,
         externalId: `${e.id}-${c.sha ?? i}`,
@@ -202,6 +219,16 @@ function mapEvent(e: any): NormalizedEvent[] | null {
         state: null,
       }));
     }
+    case "CreateEvent":
+      return [{
+        ...base,
+        externalId: e.id,
+        type: "release",
+        action: "created",
+        title: `${e.payload?.ref_type ?? "ref"} ${e.payload?.ref ?? ""} created`.trim(),
+        url: repo ? `https://github.com/${repo}` : null,
+        state: null,
+      }];
     case "IssuesEvent":
       return [{
         ...base,

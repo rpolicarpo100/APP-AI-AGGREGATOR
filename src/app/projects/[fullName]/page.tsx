@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { PageHead } from "@/components/shell";
-import { HealthRing, timeAgo } from "@/components/primitives";
+import { HealthRing } from "@/components/primitives";
+import { timeAgo } from "@/lib/format";
 import type { AttentionFlag, HealthResult } from "@/lib/intelligence";
 
 export const dynamic = "force-dynamic";

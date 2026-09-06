@@ -1,7 +1,7 @@
 import { getOverview } from "@/lib/queries";
 import { ensureProviders } from "@/lib/sync";
 import { PageHead, SyncButton } from "@/components/shell";
-import { timeAgo } from "@/components/primitives";
+import { timeAgo } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 

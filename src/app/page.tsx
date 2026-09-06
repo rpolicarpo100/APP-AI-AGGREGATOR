@@ -3,7 +3,8 @@ import { getAiBreakdown, getAttentionItems, getLanguageBreakdown, getOverview, g
 import { ensureProviders } from "@/lib/sync";
 import { MetricGrid } from "@/components/MetricGrid";
 import { EmptyState, PageHead, SyncButton } from "@/components/shell";
-import { HealthRing, timeAgo } from "@/components/primitives";
+import { HealthRing } from "@/components/primitives";
+import { timeAgo } from "@/lib/format";
 import type { AttentionFlag } from "@/lib/intelligence";
 
 export const dynamic = "force-dynamic";
